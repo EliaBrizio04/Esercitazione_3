@@ -21,7 +21,7 @@ let server = http.createServer(function(req, res){
     let scelta = (url.parse(req.url)).pathname;
     switch(scelta){
         case "/i1":
-            insertMany(res, "transazioni",
+            insertMany(res, "ospiti",
                 [
                     {_id:1, nome:"Carlo", cognome:"Ferrero", residenza:"Fossano", anni:54},
                     {_id:2, nome:"Leopoldo", cognome:"Marengo", residenza:"Cuneo", anni:65},
@@ -35,7 +35,7 @@ let server = http.createServer(function(req, res){
             break;
 
         case "/i2":
-            insertMany(res, "utenti",
+            insertMany(res, "soggiorni",
                 [
                     {cliente:4, anticipo:25, data:new Date("2020-08-16"), costoBase:150, extra:[{desc:"spumante", spesa:33},{desc:"cena", spesa:45}]},
                     {cliente:3, anticipo:15, data:new Date("2020-09-18"), costoBase:100, extra:[{desc:"bibita", spesa:4.5},{desc:"panini", spesa:15}]},
@@ -51,7 +51,7 @@ let server = http.createServer(function(req, res){
             break;
 
         case "/q1":
-
+            
             break;
 
         default:
