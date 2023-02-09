@@ -51,7 +51,58 @@ let server = http.createServer(function(req, res){
             break;
 
         case "/q1":
-            
+            find(res, "ospiti", {residenza:/o$/}, {});
+            break;
+
+        case "/q2":
+            find(res, "soggiorni", {"extra.desc":"spiaggia"}, {});
+            break;
+
+        case "/q3":
+            op = [
+                {$match:{$and:[{cognome:/e/},{cognome:/o/}]}},
+                {$limit:3}
+            ]
+            aggregate(res, "ospiti", op);
+            break;
+
+        case "/q4":
+            find2(res, "soggiorni", {extra:{$exists:false}}, {}, function (ris){
+                let id = ris[0].cliente;
+                find(res, "ospiti", {_id:id}, {});
+            });
+            break;
+
+        case "/q5":
+            find(res, "soggiorni", {"extra.spesa":{$gt:50}}, {});
+            break;
+
+        case "/q6":
+            find2(res, "ospiti", {nome:"Rosanna"}, {}, function (ris){
+                let id = ris[0]._id;
+                find2(res, "soggiorni", {cliente:id}, {}, function (ris){
+                    let soldiDaPagare = 0;
+                    let soldiPagati = 0;
+                    ris.forEach(function (cliente){
+                        soldiPagati += cliente.anticipo;
+                        soldiDaPagare += cliente.costoBase;
+                        cliente.extra.forEach(function (ex){
+                            soldiDaPagare += ex.spesa;
+                        });
+                    });
+
+                    soldiDaPagare -= soldiPagati;
+                    res.end(JSON.stringify({nome:"Rosanna", soldi:soldiDaPagare}));
+                });
+            });
+            break;
+
+        case "/q7":
+            op = [
+                {$match:{"extra.desc":"cena"}},
+                {$group:{_id:{}, numero:{$sum:1}}}
+            ]
+            aggregate(res, "soggiorni", op);
             break;
 
         default:
