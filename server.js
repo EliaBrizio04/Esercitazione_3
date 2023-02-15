@@ -105,6 +105,79 @@ let server = http.createServer(function(req, res){
             aggregate(res, "soggiorni", op);
             break;
 
+        case "/q8":
+            op = [
+                {$match:{anni:{$gt:40}}},
+                {$group:{_id: {residenza:"$residenza"}, numero:{$sum:1}}}
+            ]
+            aggregate(res, "ospiti", op);
+            break;
+
+        case "/q9":
+            find2(res, "soggiorni", {}, {costoBase:1, mese:{$month:"$data"}}, function (ris){
+                console.log(ris);
+                let ricavo = 0;
+                let cont = 0;
+                if (ris[0].mese >= 9 && ris[0].mese <= 12){
+                    ricavo += ris[0].costoBase;
+                    cont++;
+                    //console.log(ris[0].costoBase + " - " + cont);
+                }
+                ricavo /= cont;
+                res.end(JSON.stringify({ricavoMedio:ricavo}));
+            });
+            break;
+
+        case "/q10":
+            find(res, "soggiorni", {$and:[{data:{$gte:new Date("2021-01-01")}}, {data:{$lte:new Date("2021-12-31")}}]}, {});
+            break;
+
+        case "/q12":
+            op = [
+                {$match:{anticipo:{$lt:50}}},
+                {$group:{_id: {}, numero:{$sum:1}}}
+            ]
+            aggregate(res, "soggiorni", op);
+            break;
+
+        case "/q13":
+            find(res, "soggiorni", {data:{$gte:new Date("2020-09-01")}}, {});
+            break;
+
+        case "/q14":
+            find2(res, "ospiti", {nome:"Elisa"}, {}, function (ris){
+                let id = ris[0]._id;
+                find2(res, "soggiorni", {cliente:id}, {}, function (ris){
+                    let soldiPagati = 0;
+                    ris.forEach(function (soggiorno){
+                        soggiorno.extra.forEach(function (ex){
+                            soldiPagati += ex.spesa;
+                        });
+                    });
+
+                    res.end(JSON.stringify({nome:"Elisa", speseExtra:soldiPagati}));
+                });
+            });
+            break;
+
+        case "/q15":
+            find2(res, "ospiti", {nome:"Leopoldo"}, {}, function (ris){
+                let id = ris[0]._id;
+                find2(res, "soggiorni", {cliente:id}, {}, function (ris){
+                    let vet = new Array();
+                    let cont = 0;
+                    ris.forEach(function (soggiorno){
+                        soggiorno.extra.forEach(function (ex){
+                            vet[cont] = ex.desc;
+                            cont++;
+                        });
+                    });
+
+                    res.end(JSON.stringify({nome:"Leopoldo", extra:vet}));
+                });
+            });
+            break;
+
         default:
             json = {cod:-1, desc:"Nessuna query trovata con quel nome"};
             res.end(JSON.stringify(json));
