@@ -80,7 +80,17 @@ let server = http.createServer(function(req, res){
         case "/q6":
             find2(res, "ospiti", {nome:"Rosanna"}, {}, function (ris){
                 let id = ris[0]._id;
-                find2(res, "soggiorni", {cliente:id}, {}, function (ris){
+                let opzioni = [
+                    {$project:{cliente:1, anticipo:1, costoBase:1, spesaExtra:{$sum:"$extra.spesa"}}},
+                    {$match:{cliente:id}},
+                    {$group:{_id:"$cliente", pagato:{$sum:"$anticipo"}, base:{$sum:"$costoBase"}, extra:{$sum:"$spesaExtra"}}}
+                ]
+                aggregate2(res, "soggiorni", opzioni, function (ris){
+                    let totale = ris[0].base + ris[0].extra - ris[0].pagato;
+                    ris[0].totale = totale;
+                    res.end(JSON.stringify(ris));
+                });
+                /*find2(res, "soggiorni", {cliente:id}, {}, function (ris){
                     let soldiDaPagare = 0;
                     let soldiPagati = 0;
                     ris.forEach(function (cliente){
@@ -93,7 +103,7 @@ let server = http.createServer(function(req, res){
 
                     soldiDaPagare -= soldiPagati;
                     res.end(JSON.stringify({nome:"Rosanna", soldi:soldiDaPagare}));
-                });
+                });*/
             });
             break;
 
@@ -114,7 +124,12 @@ let server = http.createServer(function(req, res){
             break;
 
         case "/q9":
-            find2(res, "soggiorni", {}, {costoBase:1, mese:{$month:"$data"}}, function (ris){
+            let opzioni = [
+                {$match:{$and:[{data:{$gte:new Date("2020-09-01")}}, {data:{$lte:new Date("2020-12-30")}}]}},
+                {$group:{_id: {}, ricavoMedio:{$avg:"$costoBase"}}}
+            ]
+            aggregate(res, "soggiorni", opzioni)
+            /*find2(res, "soggiorni", {}, {costoBase:1, mese:{$month:"$data"}}, function (ris){
                 console.log(ris);
                 let ricavo = 0;
                 let cont = 0;
@@ -125,11 +140,16 @@ let server = http.createServer(function(req, res){
                 }
                 ricavo /= cont;
                 res.end(JSON.stringify({ricavoMedio:ricavo}));
-            });
+            });*/
             break;
 
         case "/q10":
-            find(res, "soggiorni", {$and:[{data:{$gte:new Date("2021-01-01")}}, {data:{$lte:new Date("2021-12-31")}}]}, {});
+            //find(res, "soggiorni", {$and:[{data:{$gte:new Date("2021-01-01")}}, {data:{$lte:new Date("2021-12-31")}}]}, {});
+            let opzioni1 = [
+                {$project:{anno:{$year:"$data"}}},
+                {$match:{anno:2021}}
+            ]
+            aggregate(res, "soggiorni", opzioni1)
             break;
 
         case "/q12":
@@ -376,6 +396,22 @@ function aggregate (res, col, opzioni){
         promise.catch(function(error){
             json = { cod:-2, desc:"Errore nella ricerca"}
             res.end(JSON.stringify(json));
+            conn.close();
+        });
+    });
+}
+
+function aggregate2(res, col, opzioni, callback){
+    creaConnessione(database, res, function(conn, db){
+        let promise = db.collection(col).aggregate(opzioni).toArray();
+        promise.then(function(ris){
+            conn.close();
+            callback(ris);
+        });
+
+        promise.catch(function(error){
+            obj = { cod:-2, desc:"Errore nella ricerca"}
+            res.end(JSON.stringify(obj));
             conn.close();
         });
     });
